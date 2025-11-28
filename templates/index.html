@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Helektron Study Assistant</h1>
+<p class="subtitle">
+    Upload lecture materials (PDF, slides, audio, notes), then generate summaries, key terms, questions, and more.
+</p>
+
+<div class="layout">
+    <!-- LEFT: Upload + Materials -->
+    <div class="card">
+        <h2>1. Upload Materials</h2>
+
+        <div class="upload-box">
+            <p><strong>Upload files:</strong> .txt, .pdf, .pptx, .mp4, .m4a</p>
+            <form
+                hx-post="/upload"
+                hx-target="#materials-panel"
+                hx-indicator="#upload-loading"
+                enctype="multipart/form-data"
+            >
+                <input type="file" name="file" required>
+                <input type="hidden" name="session_id" id="session_id_input">
+                <br><br>
+                <button class="primary" type="submit">Upload</button>
+            </form>
+        </div>
+
+        <div class="upload-box">
+            <p><strong>Live Transcription:</strong> record audio and transcribe with Whisper.</p>
+            <button class="secondary" id="record-btn">🎙 Start Recording</button>
+            <p id="record-status" style="font-size: 12px; color:#555; margin-top:6px;"></p>
+        </div>
+
+        <div id="upload-loading" class="htmx-indicator">
+            Uploading/processing material...
+        </div>
+
+        <div id="materials-panel">
+            <!-- filled by upload_status fragment -->
+            <div id="materials-list">
+                <em>No materials uploaded yet.</em>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Study Tools -->
+    <div class="card">
+        <h2>2. Generate Study Material</h2>
+
+        <p style="font-size:13px; color:#555; margin-top:0;">
+            Once you've uploaded all relevant materials, choose what you want the AI to generate.
+        </p>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+            <button class="primary"
+                    id="btn-summary"
+                    disabled
+                    hx-target="#results-panel"
+                    hx-indicator="#generate-loading">
+                Summary
+            </button>
+            <button class="secondary"
+                    id="btn-keyterms"
+                    disabled
+                    hx-target="#results-panel"
+                    hx-indicator="#generate-loading">
+                Key Terms
+            </button>
+            <button class="secondary"
+                    id="btn-questions"
+                    disabled
+                    hx-target="#results-panel"
+                    hx-indicator="#generate-loading">
+                Practice Questions
+            </button>
+            <button class="secondary"
+                    id="btn-resources"
+                    disabled
+                    hx-target="#results-panel"
+                    hx-indicator="#generate-loading">
+                External Resources
+            </button>
+        </div>
+
+        <div id="generate-loading" class="htmx-indicator">
+            Generating material...
+        </div>
+
+        <div id="results-panel">
+            <em>Your generated study content will appear here.</em>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentSessionId = null;
+
+// Called from upload_status fragment
+function setSessionId(id) {
+    currentSessionId = id;
+    document.getElementById("session_id_input").value = id;
+    enableStudyButtons();
+}
+
+function enableStudyButtons() {
+    if (!currentSessionId) return;
+
+    const summaryBtn = document.getElementById("btn-summary");
+    const keyBtn = document.getElementById("btn-keyterms");
+    const qBtn = document.getElementById("btn-questions");
+    const rBtn = document.getElementById("btn-resources");
+
+    summaryBtn.disabled = keyBtn.disabled = qBtn.disabled = rBtn.disabled = false;
+
+    summaryBtn.setAttribute("hx-get", `/summary/${currentSessionId}`);
+    keyBtn.setAttribute("hx-get", `/keyterms/${currentSessionId}`);
+    qBtn.setAttribute("hx-get", `/questions/${currentSessionId}`);
+    rBtn.setAttribute("hx-get", `/resources/${currentSessionId}`);
+}
+
+// -------- Live recording with MediaRecorder --------
+let mediaRecorder = null;
+let recordedChunks = [];
+
+const recordBtn = document.getElementById("record-btn");
+const recordStatus = document.getElementById("record-status");
+
+recordBtn.addEventListener("click", async () => {
+    if (!mediaRecorder || mediaRecorder.state === "inactive") {
+        // Start recording
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            recordedChunks = [];
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(recordedChunks, { type: "audio/webm" });
+                await uploadLiveAudio(blob);
+                stream.getTracks().forEach(t => t.stop());
+                recordStatus.textContent = "Recording finished. Transcribing...";
+            };
+
+            mediaRecorder.start();
+            recordBtn.textContent = "⏹ Stop Recording";
+            recordStatus.textContent = "Recording...";
+        } catch (err) {
+            console.error(err);
+            alert("Could not access microphone.");
+        }
+    } else if (mediaRecorder.state === "recording") {
+        // Stop recording
+        mediaRecorder.stop();
+        recordBtn.textContent = "🎙 Start Recording";
+    }
+});
+
+async function uploadLiveAudio(blob) {
+    const formData = new FormData();
+    formData.append("audio", blob, "live_recording.webm");
+    if (currentSessionId) {
+        formData.append("session_id", currentSessionId);
+    }
+
+    const resp = await fetch("/upload_live_audio", {
+        method: "POST",
+        body: formData
+    });
+
+    const html = await resp.text();
+    document.getElementById("materials-panel").innerHTML = html;
+    recordStatus.textContent = "Live audio processed.";
+}
+</script>
+
+{% endblock %}
+

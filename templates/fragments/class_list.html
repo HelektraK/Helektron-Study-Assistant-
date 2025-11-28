@@ -1,0 +1,17 @@
+<ul>
+    {% for cls in classes %}
+    <li>
+        <button 
+            hx-post="/set_active_class" 
+            hx-vals='{"class_id": "{{ cls.id }}"}'
+            hx-target="#upload-list"
+            hx-swap="innerHTML"
+            class="{% if cls.id == active_class_id %}active{% endif %}"
+        >
+            {{ cls.name }}
+        </button>
+    </li>
+    {% endfor %}
+</ul>
+
+    
