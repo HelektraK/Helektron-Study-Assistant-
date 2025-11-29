@@ -8,7 +8,7 @@ from typing import Dict, Any
 import fitz  # PyMuPDF
 from pptx import Presentation
 from fastapi import FastAPI, Request, UploadFile, File, Form
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import google.generativeai as genai
@@ -323,7 +323,7 @@ async def upload_live_audio(
 
 # ---- Study tools (summary, key terms, questions, resources) ----
 
-@app.get("/summary/{session_id}", response_class=HTMLResponse)
+@app.get("/summary/{session_id}", response_class=PlainTextResponse)
 def generate_summary(request: Request, session_id: str):
     text = get_session_text(session_id)
     if not text.strip():
@@ -331,13 +331,11 @@ def generate_summary(request: Request, session_id: str):
     else:
         prompt = get_summary_prompt(text)
         content = call_gemini(prompt)
+    # Return plain text directly to HTMX target
+    return content
 
-    return templates.TemplateResponse(
-        "fragments/summary.html",
-        {"request": request, "content": content},
-    )
 
-@app.get("/keyterms/{session_id}", response_class=HTMLResponse)
+@app.get("/keyterms/{session_id}", response_class=PlainTextResponse)
 def generate_keyterms(request: Request, session_id: str):
     text = get_session_text(session_id)
     if not text.strip():
@@ -345,13 +343,10 @@ def generate_keyterms(request: Request, session_id: str):
     else:
         prompt = get_keyterms_prompt(text)
         content = call_gemini(prompt)
+    return content
 
-    return templates.TemplateResponse(
-        "fragments/keyterms.html",
-        {"request": request, "content": content},
-    )
 
-@app.get("/questions/{session_id}", response_class=HTMLResponse)
+@app.get("/questions/{session_id}", response_class=PlainTextResponse)
 def generate_questions_view(request: Request, session_id: str):
     text = get_session_text(session_id)
     if not text.strip():
@@ -359,13 +354,10 @@ def generate_questions_view(request: Request, session_id: str):
     else:
         prompt = get_questions_prompt(text)
         content = call_gemini(prompt)
+    return content
 
-    return templates.TemplateResponse(
-        "fragments/questions.html",
-        {"request": request, "content": content},
-    )
 
-@app.get("/resources/{session_id}", response_class=HTMLResponse)
+@app.get("/resources/{session_id}", response_class=PlainTextResponse)
 def generate_resources_view(request: Request, session_id: str):
     text = get_session_text(session_id)
     if not text.strip():
@@ -373,10 +365,5 @@ def generate_resources_view(request: Request, session_id: str):
     else:
         prompt = get_resources_prompt(text)
         content = call_gemini(prompt)
-
-    return templates.TemplateResponse(
-        "fragments/resources.html",
-        {"request": request, "content": content},
-    )
-
+    return content
 
