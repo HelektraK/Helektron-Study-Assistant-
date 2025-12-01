@@ -1,13 +1,13 @@
-{% if session_id %}
-<div data-session-id="{{ session_id }}"></div>
-{% endif %}
-
-{% if files %}
-<ul>
-    {% for f in files %}
-    <li><strong>{{ f.name }}</strong> ({{ f.type }})</li>
-    {% endfor %}
-</ul>
-{% else %}
-<em>No materials uploaded yet.</em>
-{% endif %}
+<div id="materials-panel">
+    <div data-session-id="{{ session_id }}"></div>
+    
+    {% if files %}
+        <ul>
+            {% for f in files %}
+            <li><strong>{{ f.name }}</strong> ({{ f.type }})</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <em>No materials uploaded yet.</em>
+    {% endif %}
+</div>

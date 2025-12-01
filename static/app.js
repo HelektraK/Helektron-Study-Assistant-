@@ -15,16 +15,22 @@ function enableStudyButtons() {
     const qBtn       = document.getElementById("btn-questions");
     const rBtn       = document.getElementById("btn-resources");
 
-    [summaryBtn, keyBtn, qBtn, rBtn].forEach(btn => btn.disabled = false);
+    const buttons = [summaryBtn, keyBtn, qBtn, rBtn];
+    
+    // Enable all buttons
+    buttons.forEach(btn => btn.disabled = false);
 
+    // Set the hx-get attributes with the session ID
     summaryBtn.setAttribute("hx-get", `/summary/${currentSessionId}`);
     keyBtn.setAttribute("hx-get", `/keyterms/${currentSessionId}`);
     qBtn.setAttribute("hx-get", `/questions/${currentSessionId}`);
     rBtn.setAttribute("hx-get", `/resources/${currentSessionId}`);
+
+    // CRITICAL: Tell HTMX to re-process these elements so it recognizes the new hx-get values
+    buttons.forEach(btn => htmx.process(btn));
 }
 
 document.body.addEventListener("htmx:afterSettle", function () {
-    // Look for the element *inside* #materials-panel that has data-session-id
     const sidElem = document.querySelector("#materials-panel [data-session-id]");
     const sid = sidElem ? sidElem.getAttribute("data-session-id") : null;
 

@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
 import json
 import uuid
@@ -15,7 +18,7 @@ import google.generativeai as genai
 
 # Ai model 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-GEM_MODEL = genai.GenerativeModel("gemini-1.5-flash")
+GEM_MODEL = genai.GenerativeModel("gemini-2.0-flash")
 
 # ----------------- CONFIG -----------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -27,8 +30,6 @@ SESSIONS_PATH = os.path.join(BASE_DIR, "sessions.json")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(AUDIO_DIR, exist_ok=True)
 os.makedirs(DOC_DIR, exist_ok=True)
-
-#client = (api_key=os.getenv("GEMINI_API_KEY"))
 
 app = FastAPI(title="Helektron Study Assistant")
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
@@ -323,7 +324,7 @@ async def upload_live_audio(
 
 # ---- Study tools (summary, key terms, questions, resources) ----
 
-@app.get("/summary/{session_id}", response_class=PlainTextResponse)
+@app.get("/summary/{session_id}", response_class=HTMLResponse)
 def generate_summary(request: Request, session_id: str):
     text = get_session_text(session_id)
     if not text.strip():
@@ -331,11 +332,13 @@ def generate_summary(request: Request, session_id: str):
     else:
         prompt = get_summary_prompt(text)
         content = call_gemini(prompt)
-    # Return plain text directly to HTMX target
-    return content
 
+    return templates.TemplateResponse(
+        "fragments/summary.html",
+        {"request": request, "content": content},
+    )
 
-@app.get("/keyterms/{session_id}", response_class=PlainTextResponse)
+@app.get("/keyterms/{session_id}", response_class=HTMLResponse)
 def generate_keyterms(request: Request, session_id: str):
     text = get_session_text(session_id)
     if not text.strip():
@@ -343,10 +346,13 @@ def generate_keyterms(request: Request, session_id: str):
     else:
         prompt = get_keyterms_prompt(text)
         content = call_gemini(prompt)
-    return content
 
+    return templates.TemplateResponse(
+        "fragments/keyterms.html",
+        {"request": request, "content": content},
+    )
 
-@app.get("/questions/{session_id}", response_class=PlainTextResponse)
+@app.get("/questions/{session_id}", response_class=HTMLResponse)
 def generate_questions_view(request: Request, session_id: str):
     text = get_session_text(session_id)
     if not text.strip():
@@ -354,10 +360,13 @@ def generate_questions_view(request: Request, session_id: str):
     else:
         prompt = get_questions_prompt(text)
         content = call_gemini(prompt)
-    return content
 
+    return templates.TemplateResponse(
+        "fragments/questions.html",
+        {"request": request, "content": content},
+    )
 
-@app.get("/resources/{session_id}", response_class=PlainTextResponse)
+@app.get("/resources/{session_id}", response_class=HTMLResponse)
 def generate_resources_view(request: Request, session_id: str):
     text = get_session_text(session_id)
     if not text.strip():
@@ -365,5 +374,8 @@ def generate_resources_view(request: Request, session_id: str):
     else:
         prompt = get_resources_prompt(text)
         content = call_gemini(prompt)
-    return content
 
+    return templates.TemplateResponse(
+        "fragments/resources.html",
+        {"request": request, "content": content},
+    )
