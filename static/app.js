@@ -1,4 +1,5 @@
 let currentSessionId = null;
+let buttonsInitialized = false;
 
 function setSessionId(id) {
     currentSessionId = id;
@@ -18,16 +19,37 @@ function enableStudyButtons() {
     const buttons = [summaryBtn, keyBtn, qBtn, rBtn];
     
     // Enable all buttons
-    buttons.forEach(btn => btn.disabled = false);
+    buttons.forEach(btn => {
+        if (btn) btn.disabled = false;
+    });
 
     // Set the hx-get attributes with the session ID
-    summaryBtn.setAttribute("hx-get", `/summary/${currentSessionId}`);
-    keyBtn.setAttribute("hx-get", `/keyterms/${currentSessionId}`);
-    qBtn.setAttribute("hx-get", `/questions/${currentSessionId}`);
-    rBtn.setAttribute("hx-get", `/resources/${currentSessionId}`);
+    if (summaryBtn) summaryBtn.setAttribute("hx-get", `/summary/${currentSessionId}`);
+    if (keyBtn) keyBtn.setAttribute("hx-get", `/keyterms/${currentSessionId}`);
+    if (qBtn) qBtn.setAttribute("hx-get", `/questions/${currentSessionId}`);
+    if (rBtn) rBtn.setAttribute("hx-get", `/resources/${currentSessionId}`);
 
     // CRITICAL: Tell HTMX to re-process these elements so it recognizes the new hx-get values
-    buttons.forEach(btn => htmx.process(btn));
+    buttons.forEach(btn => {
+        if (btn) htmx.process(btn);
+    });
+
+    // Only add click handlers once
+    if (!buttonsInitialized) {
+        buttons.forEach(btn => {
+            if (btn) {
+                btn.addEventListener("click", function() {
+                    // Remove active class from all buttons
+                    buttons.forEach(b => {
+                        if (b) b.classList.remove("active");
+                    });
+                    // Add active class to clicked button
+                    this.classList.add("active");
+                });
+            }
+        });
+        buttonsInitialized = true;
+    }
 }
 
 document.body.addEventListener("htmx:afterSettle", function () {
@@ -39,43 +61,45 @@ document.body.addEventListener("htmx:afterSettle", function () {
     }
 });
 
-// recording JS:
+// Recording JS:
 let mediaRecorder = null;
 let recordedChunks = [];
 
 const recordBtn = document.getElementById("record-btn");
 const recordStatus = document.getElementById("record-status");
 
-recordBtn.addEventListener("click", async () => {
-    if (!mediaRecorder || mediaRecorder.state === "inactive") {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            recordedChunks = [];
+if (recordBtn) {
+    recordBtn.addEventListener("click", async () => {
+        if (!mediaRecorder || mediaRecorder.state === "inactive") {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                recordedChunks = [];
 
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) recordedChunks.push(e.data);
-            };
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) recordedChunks.push(e.data);
+                };
 
-            mediaRecorder.onstop = async () => {
-                const blob = new Blob(recordedChunks, { type: "audio/webm" });
-                await uploadLiveAudio(blob);
-                stream.getTracks().forEach(t => t.stop());
-                recordStatus.textContent = "Recording finished. Transcribing...";
-            };
+                mediaRecorder.onstop = async () => {
+                    const blob = new Blob(recordedChunks, { type: "audio/webm" });
+                    await uploadLiveAudio(blob);
+                    stream.getTracks().forEach(t => t.stop());
+                    recordStatus.textContent = "Recording finished. Transcribing...";
+                };
 
-            mediaRecorder.start();
-            recordBtn.textContent = "⏹ Stop Recording";
-            recordStatus.textContent = "Recording...";
-        } catch (err) {
-            console.error(err);
-            alert("Could not access microphone.");
+                mediaRecorder.start();
+                recordBtn.textContent = "⏹ Stop Recording";
+                recordStatus.textContent = "Recording...";
+            } catch (err) {
+                console.error(err);
+                alert("Could not access microphone.");
+            }
+        } else if (mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+            recordBtn.textContent = "🎙 Start Recording";
         }
-    } else if (mediaRecorder.state === "recording") {
-        mediaRecorder.stop();
-        recordBtn.textContent = "🎙 Start Recording";
-    }
-});
+    });
+}
 
 async function uploadLiveAudio(blob) {
     const formData = new FormData();

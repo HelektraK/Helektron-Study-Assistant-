@@ -39,7 +39,7 @@
             Uploading/processing material...
         </div>
 
-        <!-- 🔥 THIS GETS UPDATED BY upload_status.html -->
+        <!-- This gets updated by upload_status.html -->
         <div id="materials-panel">
             <em>No materials uploaded yet.</em>
         </div>
@@ -52,8 +52,8 @@
 
         <p style="font-size:13px; color:#555;">Choose what you want the AI to generate.</p>
 
-        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
-            <button class="primary"
+        <div id="study-buttons" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+            <button class="study-btn"
                     id="btn-summary"
                     disabled
                     hx-get=""
@@ -62,7 +62,7 @@
                 Summary
             </button>
 
-            <button class="secondary"
+            <button class="study-btn"
                     id="btn-keyterms"
                     disabled
                     hx-get=""
@@ -71,7 +71,7 @@
                 Key Terms
             </button>
 
-            <button class="secondary"
+            <button class="study-btn"
                     id="btn-questions"
                     disabled
                     hx-get=""
@@ -80,7 +80,7 @@
                 Practice Questions
             </button>
 
-            <button class="secondary"
+            <button class="study-btn"
                     id="btn-resources"
                     disabled
                     hx-get=""
@@ -90,8 +90,13 @@
             </button>
         </div>
 
+        <!-- Loading indicator with progress bar -->
         <div id="generate-loading" class="htmx-indicator">
-            Generating material...
+            <div class="spinner"></div>
+            <p class="loading-text">Generating study material...</p>
+            <div class="progress-bar">
+                <div class="progress-bar-fill"></div>
+            </div>
         </div>
 
         <div id="results-panel">
