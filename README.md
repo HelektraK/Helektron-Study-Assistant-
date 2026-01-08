@@ -2,6 +2,8 @@
 
 A web application for uploading lecture materials (PDF, slides, audio, notes) and generating AI-powered study content including summaries, key terms, practice questions, and resource recommendations using RAG (Retrieval-Augmented Generation).
 
+> NOTE: To view app demo video, select "View raw" to download and view web app
+
 ## Features
 
 - **File Upload**: Support for `.txt`, `.pdf`, `.pptx`, `.mp4`, `.m4a`, `.wav`, `.webm`
